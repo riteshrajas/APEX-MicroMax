@@ -1,17 +1,17 @@
 #include <Arduino.h>
+#include "IO_Manager.h"
+#include "Communication.h"
+
+IO_Manager ioManager;
+Communication comm(ioManager);
 
 void setup() {
-  Serial.begin(115200);
-  pinMode(LED_BUILTIN, OUTPUT);
-  Serial.println("Setup complete, starting blink loop...");
+    ioManager.setCommunication(&comm);
+    ioManager.begin();
+    comm.begin(115200);
 }
 
 void loop() {
-  Serial.println("LED ON");
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(500);
-  
-  Serial.println("LED OFF");
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(500);
-}
+    comm.update();
+    ioManager.update();
+}
