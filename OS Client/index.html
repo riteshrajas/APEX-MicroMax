@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apex OS Client</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <p class="eyebrow">Apex Ecosystem</p>
+        <h1>OS Client</h1>
+        <p class="muted-copy">Scoped device control, Web Serial interaction, and firmware tooling for MicroMax.</p>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Scoped Devices</h2>
+          <button id="add-device" class="button secondary">Add</button>
+        </div>
+        <div id="device-list" class="device-list"></div>
+      </section>
+
+      <section class="panel compact">
+        <h2>Selected Scope</h2>
+        <label class="field">
+          <span>Name</span>
+          <input id="device-name" type="text" placeholder="Desk Node Alpha" />
+        </label>
+        <label class="field">
+          <span>Firmware Profile</span>
+          <select id="device-profile"></select>
+        </label>
+        <label class="field">
+          <span>Expected Node ID</span>
+          <input id="device-node-id" type="text" placeholder="MMX-UNO-01" />
+        </label>
+        <label class="field">
+          <span>Notes</span>
+          <textarea id="device-notes" rows="3" placeholder="Workstation relay stack"></textarea>
+        </label>
+        <div class="inline-actions">
+          <button id="save-device" class="button primary">Save Scope</button>
+          <button id="remove-device" class="button destructive">Delete</button>
+        </div>
+      </section>
+    </aside>
+
+    <main class="main-grid">
+      <section class="hero-card">
+        <div>
+          <p class="eyebrow">Chrome-Based Control Surface</p>
+          <h2>MicroMax Runtime Console</h2>
+          <p class="muted-copy">Use Chromium Web Serial to interact with the selected device. Flashing is command-assisted because browsers cannot execute PlatformIO directly.</p>
+        </div>
+        <div class="status-strip">
+          <div class="status-chip" id="browser-support">Checking browser support</div>
+          <div class="status-chip" id="connection-status">Disconnected</div>
+          <div class="status-chip" id="selected-profile-chip">Profile: -</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h3>Serial Session</h3>
+          <p class="muted-copy">Grant access to a USB serial device and bind it to the selected scope.</p>
+        </div>
+        <div class="grid two">
+          <div class="stack">
+            <div class="inline-actions">
+              <button id="authorize-port" class="button primary">Authorize / Connect</button>
+              <button id="reconnect-port" class="button secondary">Use Granted Port</button>
+              <button id="disconnect-port" class="button secondary">Disconnect</button>
+            </div>
+            <label class="field">
+              <span>Authorized Ports</span>
+              <select id="granted-port-list"></select>
+            </label>
+          </div>
+          <div class="metrics">
+            <div class="metric"><span class="metric-label">Bound Scope</span><strong id="bound-scope">-</strong></div>
+            <div class="metric"><span class="metric-label">Port Label</span><strong id="port-label">-</strong></div>
+            <div class="metric"><span class="metric-label">Node ID</span><strong id="node-id">-</strong></div>
+            <div class="metric"><span class="metric-label">Status</span><strong id="node-status">-</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h3>Interaction</h3>
+          <p class="muted-copy">Core commands for runtime state, telemetry, alerts, and actuator control.</p>
+        </div>
+        <div class="grid three">
+          <div class="command-cluster">
+            <h4>Node Actions</h4>
+            <div class="inline-actions wrap">
+              <button data-command="ping" class="button secondary quick-command">Ping</button>
+              <button data-query="WHO_ARE_YOU" class="button secondary quick-query">Identity</button>
+              <button data-query="GET_STATUS" class="button secondary quick-query">Status</button>
+              <button data-query="GET_TELEMETRY" class="button secondary quick-query">Telemetry</button>
+              <button data-query="GET_CAPABILITIES" class="button secondary quick-query">Capabilities</button>
+            </div>
+            <label class="field"><span>Role</span><select id="role-select"><option value="reflex">reflex</option><option value="sentry">sentry</option><option value="action">action</option></select></label>
+            <label class="field"><span>Core State</span><select id="state-select"><option value="IDLE">IDLE</option><option value="BUSY">BUSY</option><option value="ALERT">ALERT</option><option value="DISCONNECTED">DISCONNECTED</option></select></label>
+            <div class="inline-actions">
+              <button id="apply-role" class="button primary">Set Role</button>
+              <button id="apply-state" class="button primary">Set State</button>
+            </div>
+          </div>
+
+          <div class="command-cluster">
+            <h4>Actuators</h4>
+            <div class="inline-actions">
+              <button id="relay-1" class="button secondary">Toggle Relay 1</button>
+              <button id="relay-2" class="button secondary">Toggle Relay 2</button>
+            </div>
+            <label class="field"><span>Servo Angle</span><input id="servo-angle" type="range" min="0" max="180" value="90" /></label>
+            <button id="apply-servo" class="button primary">Apply Servo</button>
+            <label class="field"><span>Buzzer Frequency</span><input id="buzzer-frequency" type="number" value="2200" /></label>
+            <label class="field"><span>Buzzer Duration ms</span><input id="buzzer-duration" type="number" value="150" /></label>
+            <button id="buzz-button" class="button primary">Buzz</button>
+          </div>
+
+          <div class="command-cluster">
+            <h4>RGB + Raw JSON</h4>
+            <label class="field"><span>Red</span><input id="rgb-r" type="range" min="0" max="255" value="255" /></label>
+            <label class="field"><span>Green</span><input id="rgb-g" type="range" min="0" max="255" value="0" /></label>
+            <label class="field"><span>Blue</span><input id="rgb-b" type="range" min="0" max="255" value="0" /></label>
+            <label class="field"><span>RGB Duration ms</span><input id="rgb-duration" type="number" value="500" /></label>
+            <button id="apply-rgb" class="button primary">Apply RGB</button>
+            <label class="field"><span>Raw JSON</span><textarea id="raw-json" rows="5">{ "query": "GET_STATUS" }</textarea></label>
+            <button id="send-raw-json" class="button secondary">Send Raw JSON</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h3>Telemetry</h3>
+          <div class="inline-actions"><button id="toggle-auto-poll" class="button secondary">Start Auto Poll</button></div>
+        </div>
+        <div class="telemetry-grid">
+          <div class="telemetry-cell"><span>Role</span><strong id="telemetry-role">-</strong></div>
+          <div class="telemetry-cell"><span>Core State</span><strong id="telemetry-core-state">-</strong></div>
+          <div class="telemetry-cell"><span>Status</span><strong id="telemetry-status">-</strong></div>
+          <div class="telemetry-cell"><span>Uptime</span><strong id="telemetry-uptime">-</strong></div>
+          <div class="telemetry-cell"><span>Temp</span><strong id="telemetry-temp">-</strong></div>
+          <div class="telemetry-cell"><span>Humidity</span><strong id="telemetry-humidity">-</strong></div>
+          <div class="telemetry-cell"><span>Lux</span><strong id="telemetry-lux">-</strong></div>
+          <div class="telemetry-cell"><span>Presence</span><strong id="telemetry-presence">-</strong></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h3>Firmware</h3>
+          <p class="muted-copy">Browser apps can assist flashing, but they cannot execute PlatformIO or avrdude directly. Use the generated commands below for the selected scope.</p>
+        </div>
+        <div class="grid two">
+          <div class="stack">
+            <div class="metric"><span class="metric-label">Profile</span><strong id="firmware-profile-name">-</strong></div>
+            <div class="metric"><span class="metric-label">Target Board</span><strong id="firmware-board">-</strong></div>
+            <div class="metric"><span class="metric-label">Environment</span><strong id="firmware-env">-</strong></div>
+            <div class="metric"><span class="metric-label">Firmware Root</span><strong id="firmware-path">P:\APEX\OS</strong></div>
+          </div>
+          <div class="stack">
+            <label class="field"><span>Upload Port</span><input id="firmware-port" type="text" placeholder="COM4" /></label>
+            <label class="field"><span>Build Command</span><textarea id="build-command" rows="2" readonly></textarea></label>
+            <label class="field"><span>Flash Command</span><textarea id="flash-command" rows="3" readonly></textarea></label>
+            <div class="inline-actions wrap">
+              <button id="copy-build-command" class="button secondary">Copy Build</button>
+              <button id="copy-flash-command" class="button primary">Copy Flash</button>
+              <button id="copy-spec-path" class="button secondary">Copy Spec Path</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card log-card">
+        <div class="card-head">
+          <h3>Session Log</h3>
+          <div class="inline-actions"><button id="clear-log" class="button secondary">Clear</button></div>
+        </div>
+        <pre id="log-output" class="log-output"></pre>
+      </section>
+    </main>
+  </div>
+
+  <template id="device-item-template">
+    <button class="device-item">
+      <span class="device-name"></span>
+      <span class="device-meta"></span>
+    </button>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
+</html>
