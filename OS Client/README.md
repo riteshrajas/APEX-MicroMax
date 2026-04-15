@@ -1,33 +1,42 @@
-# Apex OS Client
+# Apex OS Client (Axum + PWA)
 
-Chrome-based JavaScript web app for MicroMax.
+Rust-backed PWA for MicroMax, with Axum serving the frontend and hardware endpoints.
 
-## What It Does
+## Project Structure
 
-- Maintains a scoped devices list in local storage
-- Connects to devices through Web Serial
-- Sends Level 1 runtime commands and raw JSON
-- Displays live telemetry and status
-- Generates PlatformIO build and flash commands for the selected firmware profile
+```text
+MicroMax/OS Client/
+├── Cargo.toml
+├── src/
+│   └── main.rs                # Axum server + /flash + removable-drive discovery
+├── index.html                 # Frontend entry
+├── styles.css
+├── app.js                     # Frontend logic + backend API helpers
+├── manifest.json              # PWA manifest
+├── service-worker.js          # Offline caching shell
+└── README.md
+```
 
-## Open It
+## Backend Endpoints
 
-Use Chromium, Chrome, or Edge and open:
+- `GET /api/drives`: lists removable writable drives (via `sysinfo`)
+- `POST /flash`: placeholder route for OS image flashing workflow
+- `GET /health`: health check
 
-- `P:\APEX\MicroMax\OS Client\index.html`
+## Run
 
-For the best behavior, serve it from a lightweight local HTTP server instead of `file://`, but Chromium Web Serial is the main requirement.
+1. `cd "P:\APEX\MicroMax\OS Client"`
+2. `cargo run`
+3. Open `http://127.0.0.1:4173`
 
-## Flashing
+## Crates Used
 
-The app can assist flashing by generating the correct commands for the selected scope:
+- `axum`: HTTP server and routing
+- `sysinfo`: removable drive discovery
+- `image_writer_rs`: expected writer tool in the flash pipeline (invoked by command preview in backend placeholder flow)
 
-- `platformio run -d "P:\APEX\MicroMax\OS" -e uno -t upload --upload-port COM4`
-- `platformio run -d "P:\APEX\MicroMax\OS" -e pico -t upload --upload-port COM5`
+Install the writer tool if needed:
 
-Browsers cannot run those commands directly, so the client focuses on:
-
-- selecting the right firmware profile
-- binding it to a scoped device
-- copying the exact build and upload commands
-- handling direct runtime interaction over serial
+```bash
+cargo install image_writer_rs
+```

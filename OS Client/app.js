@@ -66,6 +66,7 @@ const els = {};
 window.addEventListener("DOMContentLoaded", init);
 
 function init() {
+  registerServiceWorker();
   bindElements();
   hydrateProfileOptions();
   wireEvents();
@@ -73,6 +74,13 @@ function init() {
   render();
   updateBrowserSupport();
   refreshGrantedPorts();
+}
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.register("/service-worker.js").catch((error) => {
+    console.error("Service worker registration failed:", error);
+  });
 }
 
 function bindElements() {
@@ -611,6 +619,38 @@ function log(message) {
   els["log-output"].textContent += `[${now}] ${message}\n`;
   els["log-output"].scrollTop = els["log-output"].scrollHeight;
 }
+
+async function fetchRemovableDrives() {
+  const response = await fetch("/api/drives");
+  if (!response.ok) {
+    throw new Error(`Drive lookup failed with status ${response.status}`);
+  }
+  return response.json();
+}
+
+async function prepareFlash(imagePath, driveMountPoint) {
+  const response = await fetch("/flash", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image_path: imagePath,
+      drive_mount_point: driveMountPoint,
+      dry_run: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Flash preparation failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+window.apexBackend = {
+  fetchRemovableDrives,
+  prepareFlash,
+};
 
 class LineBreakTransformer {
   constructor() {

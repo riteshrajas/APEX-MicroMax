@@ -1,0 +1,15 @@
+# Rust / Cargo
+target/
+
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
