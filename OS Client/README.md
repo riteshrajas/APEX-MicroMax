@@ -14,7 +14,7 @@ Chrome-based JavaScript web app for MicroMax.
 
 Use Chromium, Chrome, or Edge and open:
 
-- `P:\APEX\OS Client\index.html`
+- `P:\APEX\MicroMax\OS Client\index.html`
 
 For the best behavior, serve it from a lightweight local HTTP server instead of `file://`, but Chromium Web Serial is the main requirement.
 
@@ -22,8 +22,8 @@ For the best behavior, serve it from a lightweight local HTTP server instead of 
 
 The app can assist flashing by generating the correct commands for the selected scope:
 
-- `platformio run -d "P:\APEX\OS" -e uno -t upload --upload-port COM4`
-- `platformio run -d "P:\APEX\OS" -e pico -t upload --upload-port COM5`
+- `platformio run -d "P:\APEX\MicroMax\OS" -e uno -t upload --upload-port COM4`
+- `platformio run -d "P:\APEX\MicroMax\OS" -e pico -t upload --upload-port COM5`
 
 Browsers cannot run those commands directly, so the client focuses on:
 

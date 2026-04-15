@@ -12,7 +12,7 @@ This directory contains the current Level 1 MicroMax firmware snapshot and suppo
 ## Build
 
 ```powershell
-cd P:\APEX\OS
+cd P:\APEX\MicroMax\OS
 platformio run -e uno
 platformio run -e pico
 ```
@@ -20,12 +20,12 @@ platformio run -e pico
 ## Upload
 
 ```powershell
-cd P:\APEX\OS
+cd P:\APEX\MicroMax\OS
 platformio run -e uno -t upload --upload-port COM4
 platformio run -e pico -t upload --upload-port COM5
 ```
 
 ## Notes
 
-- The browser client in `P:\APEX\OS Client` can interact with devices directly over Web Serial.
+- The browser client in `P:\APEX\MicroMax\OS Client` can interact with devices directly over Web Serial.
 - Browser code cannot execute PlatformIO itself, so the client generates the exact upload commands for flashing.
