@@ -178,6 +178,8 @@ textarea { resize: vertical; }
 .button.primary { background: var(--primary); color: var(--primary-foreground); }
 .button.secondary { background: var(--secondary); color: var(--secondary-foreground); }
 .button.destructive { background: var(--destructive); color: var(--destructive-foreground); }
+.button.pwa-install { white-space: nowrap; }
+.button:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
 
 .inline-actions { display: flex; gap: 10px; align-items: center; }
 .inline-actions.wrap { flex-wrap: wrap; }

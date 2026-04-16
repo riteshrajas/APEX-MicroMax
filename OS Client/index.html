@@ -4,8 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Apex OS Client</title>
   <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -61,6 +64,8 @@
           <div class="status-chip" id="browser-support">Checking browser support</div>
           <div class="status-chip" id="connection-status">Disconnected</div>
           <div class="status-chip" id="selected-profile-chip">Profile: -</div>
+          <div class="status-chip" id="install-status">Install status: checking</div>
+          <button id="install-app" class="button secondary pwa-install" type="button" hidden>Install App</button>
         </div>
       </section>
 

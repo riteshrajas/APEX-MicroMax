@@ -44,6 +44,10 @@ const POLL_MS = 2000;
 const state = {
   scopes: loadScopes(),
   selectedScopeId: null,
+  pwa: {
+    deferredPrompt: null,
+    installed: false,
+  },
   serial: {
     port: null,
     reader: null,
@@ -70,6 +74,7 @@ function init() {
   bindElements();
   hydrateProfileOptions();
   wireEvents();
+  initInstallExperience();
   state.selectedScopeId = state.scopes[0]?.id ?? null;
   render();
   updateBrowserSupport();
@@ -96,6 +101,8 @@ function bindElements() {
     "browser-support",
     "connection-status",
     "selected-profile-chip",
+    "install-status",
+    "install-app",
     "authorize-port",
     "reconnect-port",
     "disconnect-port",
@@ -163,6 +170,7 @@ function wireEvents() {
   els["add-device"].addEventListener("click", addScope);
   els["save-device"].addEventListener("click", saveSelectedScope);
   els["remove-device"].addEventListener("click", removeSelectedScope);
+  els["install-app"].addEventListener("click", installPwa);
   els["authorize-port"].addEventListener("click", requestAndConnectPort);
   els["reconnect-port"].addEventListener("click", reconnectGrantedPort);
   els["disconnect-port"].addEventListener("click", disconnectSerial);
@@ -195,6 +203,81 @@ function wireEvents() {
       await disconnectSerial();
     });
   }
+}
+
+function initInstallExperience() {
+  state.pwa.installed = isStandaloneMode();
+  renderInstallState();
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    state.pwa.deferredPrompt = event;
+    renderInstallState();
+  });
+
+  window.addEventListener("appinstalled", () => {
+    state.pwa.deferredPrompt = null;
+    state.pwa.installed = true;
+    renderInstallState();
+    log("Apex OS Client installed.");
+  });
+
+  const displayModeMedia = window.matchMedia("(display-mode: standalone)");
+  const handleModeChange = () => {
+    state.pwa.installed = isStandaloneMode();
+    renderInstallState();
+  };
+  displayModeMedia.addEventListener("change", handleModeChange);
+}
+
+function isStandaloneMode() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function isInstallableOrigin() {
+  const isLocalhost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+  return window.isSecureContext || isLocalhost;
+}
+
+function renderInstallState() {
+  const installChip = els["install-status"];
+  const installButton = els["install-app"];
+  if (!installChip || !installButton) return;
+
+  if (state.pwa.installed) {
+    installChip.textContent = "Install status: installed";
+    installChip.className = "status-chip ok";
+    installButton.hidden = true;
+    return;
+  }
+
+  if (!isInstallableOrigin()) {
+    installChip.textContent = "Install status: use localhost or HTTPS";
+    installChip.className = "status-chip bad";
+    installButton.hidden = true;
+    return;
+  }
+
+  installChip.textContent = state.pwa.deferredPrompt
+    ? "Install status: ready to install"
+    : "Install status: use browser Install App menu";
+  installChip.className = "status-chip warn";
+  installButton.hidden = false;
+  installButton.disabled = !state.pwa.deferredPrompt;
+  installButton.textContent = state.pwa.deferredPrompt ? "Install App" : "Install via Browser Menu";
+}
+
+async function installPwa() {
+  if (!state.pwa.deferredPrompt) {
+    window.alert("Use your browser menu and choose 'Install App'.");
+    return;
+  }
+
+  state.pwa.deferredPrompt.prompt();
+  const { outcome } = await state.pwa.deferredPrompt.userChoice;
+  state.pwa.deferredPrompt = null;
+  renderInstallState();
+  log(outcome === "accepted" ? "Install prompt accepted." : "Install prompt dismissed.");
 }
 
 function loadScopes() {

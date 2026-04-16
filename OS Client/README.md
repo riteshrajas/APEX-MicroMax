@@ -39,6 +39,15 @@ cargo run
 
 Open: `http://127.0.0.1:4173`
 
+## Install as Desktop App (PWA)
+
+The client now supports desktop installation on Windows/macOS from Chromium-based browsers.
+
+1. Run the server with `cargo run`.
+2. Open `http://127.0.0.1:4173` in Chrome or Edge.
+3. Click **Install App** in the UI (or use browser menu → **Install App**).
+4. Launch **Apex OS Client** from your OS app launcher; it opens in standalone app mode.
+
 ## Optional Tooling
 
 The backend prepares `image_writer_rs` command previews for flash workflows.
