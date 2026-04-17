@@ -4,12 +4,16 @@
 
 class Communication;
 
+#ifndef MAX_PINS_COUNT
+#define MAX_PINS_COUNT 20
+#endif
+
 class IO_Manager {
 private:
     IHardware* hw;
     Communication* comm;
 
-    static const uint8_t MAX_PINS = 20;
+    static const uint8_t MAX_PINS = MAX_PINS_COUNT;
     uint8_t safeStates[MAX_PINS];
     uint8_t currentStates[MAX_PINS];
     bool isPinConfigured[MAX_PINS];
@@ -50,5 +54,17 @@ public:
                 setActuator(i, safeStates[i]);
             }
         }
+    }
+
+    bool isConfigured(uint8_t pin) const {
+        return pin < MAX_PINS && isPinConfigured[pin];
+    }
+
+    uint8_t getPinState(uint8_t pin) const {
+        return (pin < MAX_PINS) ? currentStates[pin] : 0;
+    }
+
+    uint8_t getMaxPins() const {
+        return MAX_PINS;
     }
 };

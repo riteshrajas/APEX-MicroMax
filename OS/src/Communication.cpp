@@ -25,7 +25,7 @@ void Communication::update() {
 }
 
 void Communication::processMessage(const char* jsonString) {
-    StaticJsonDocument<256> doc;
+    StaticJsonDocument<512> doc;
     DeserializationError error = deserializeJson(doc, jsonString);
 
     if (error) {
@@ -33,39 +33,48 @@ void Communication::processMessage(const char* jsonString) {
         return;
     }
 
-    const char* cmd = doc["cmd"];
-    const char* msgId = doc["msgId"] | "UNKNOWN";
+    // Support multiple field names for the command/action
+    const char* cmd = doc["cmd"] | doc["action"] | doc["query"] | doc["command"];
+    const char* msgId = doc["msgId"] | doc["id"] | "UNKNOWN";
 
     if (!cmd) {
-        sendError(msgId, "Missing 'cmd' field");
+        sendError(msgId, "Missing command field (cmd, action, or query)");
         return;
     }
 
     // Heartbeat logic
-    // We only update heartbeat for valid commands to prevent garbage from keeping us alive
     stateMachine.heartbeatReceived();
 
-    if (strcmp(cmd, "PING") == 0) {
+    // Normalize command to uppercase for easier matching
+    String cmdStr = String(cmd);
+    cmdStr.toUpperCase();
+
+    if (cmdStr == "PING") {
         handlePing(doc.as<JsonObject>());
-    } else if (strcmp(cmd, "QUERY_TELEMETRY") == 0) {
+    } else if (cmdStr == "QUERY_TELEMETRY" || cmdStr == "GET_TELEMETRY" || cmdStr == "TELEMETRY") {
         handleQueryTelemetry(doc.as<JsonObject>());
-    } else if (strcmp(cmd, "SET_ACTUATOR") == 0) {
+    } else if (cmdStr == "SET_ACTUATOR" || cmdStr == "WRITE" || cmdStr == "TOGGLE_RELAY" || cmdStr == "SET_SERVO") {
         handleSetActuator(doc.as<JsonObject>());
-    } else if (strcmp(cmd, "SET_ROLE") == 0) {
+    } else if (cmdStr == "SET_ROLE") {
         handleSetRole(doc.as<JsonObject>());
-    } else if (strcmp(cmd, "REBOOT") == 0) {
+    } else if (cmdStr == "REBOOT") {
         handleReboot(doc.as<JsonObject>());
+    } else if (cmdStr == "WHO_ARE_YOU") {
+        sendIdentity();
+    } else if (cmdStr == "GET_STATUS" || cmdStr == "STATUS") {
+        sendStatus();
     } else {
         sendError(msgId, "Unknown command");
     }
 }
 
 void Communication::handlePing(JsonObject doc) {
-    const char* msgId = doc["msgId"] | "UNKNOWN";
+    const char* msgId = doc["msgId"] | doc["id"] | "UNKNOWN";
 
     StaticJsonDocument<128> response;
     response["msgId"] = msgId;
     response["status"] = "OK";
+    response["v"] = "2.0";
 
     char buffer[128];
     serializeJson(response, buffer);
@@ -74,37 +83,74 @@ void Communication::handlePing(JsonObject doc) {
 }
 
 void Communication::handleQueryTelemetry(JsonObject doc) {
-    const char* msgId = doc["msgId"] | "UNKNOWN";
+    const char* msgId = doc["msgId"] | doc["id"] | "UNKNOWN";
 
-
-    StaticJsonDocument<256> response;
+    StaticJsonDocument<512> response;
     response["msgId"] = msgId;
     response["status"] = "OK";
+    response["v"] = "2.0";
     JsonObject data = response.createNestedObject("data");
     data["state"] = (int)stateMachine.getState();
+    data["uptime"] = getHardware()->getMillis() / 1000;
 
-    char buffer[256];
+    JsonObject pins = data.createNestedObject("pins");
+    for (uint8_t i = 0; i < ioManager.getMaxPins(); i++) {
+        if (ioManager.isConfigured(i)) {
+            char pinName[4];
+            snprintf(pinName, sizeof(pinName), "D%d", i);
+            pins[pinName] = ioManager.getPinState(i);
+        }
+    }
+
+    char buffer[512];
     serializeJson(response, buffer);
     getHardware()->serialPrint(buffer);
     getHardware()->serialPrintln();
 }
 
 void Communication::handleSetActuator(JsonObject doc) {
-    const char* msgId = doc["msgId"] | "UNKNOWN";
+    const char* msgId = doc["msgId"] | doc["id"] | "UNKNOWN";
 
-    if (!doc.containsKey("pin") || !doc.containsKey("value")) {
-        sendError(msgId, "Missing pin or value");
+    uint8_t pin = 255;
+    uint8_t value = 0;
+
+    // Resolve Pin
+    if (doc.containsKey("pin")) {
+        pin = doc["pin"];
+    } else if (doc.containsKey("target")) {
+        const char* target = doc["target"];
+        if (target[0] == 'D') {
+            pin = atoi(target + 1);
+        } else {
+            pin = atoi(target);
+        }
+    } else if (doc.containsKey("index")) {
+        // Default relay mapping for MicroMax
+        uint8_t index = doc["index"];
+        if (index == 1) pin = 2;
+        else if (index == 2) pin = 3;
+    }
+
+    if (pin == 255) {
+        sendError(msgId, "Missing or invalid pin/target/index");
         return;
     }
 
-    uint8_t pin = doc["pin"];
-    uint8_t value = doc["value"];
+    // Resolve Value
+    if (doc.containsKey("value")) {
+        value = doc["value"];
+    } else if (doc.containsKey("angle")) {
+        value = doc["angle"];
+    } else {
+        value = 1; // Default to HIGH/ON
+    }
 
     ioManager.setActuator(pin, value);
 
     StaticJsonDocument<128> response;
     response["msgId"] = msgId;
     response["status"] = "OK";
+    response["v"] = "2.0";
 
     char buffer[128];
     serializeJson(response, buffer);
@@ -113,11 +159,12 @@ void Communication::handleSetActuator(JsonObject doc) {
 }
 
 void Communication::handleSetRole(JsonObject doc) {
-    const char* msgId = doc["msgId"] | "UNKNOWN";
+    const char* msgId = doc["msgId"] | doc["id"] | "UNKNOWN";
 
     StaticJsonDocument<128> response;
     response["msgId"] = msgId;
     response["status"] = "OK";
+    response["v"] = "2.0";
 
     char buffer[128];
     serializeJson(response, buffer);
@@ -126,11 +173,12 @@ void Communication::handleSetRole(JsonObject doc) {
 }
 
 void Communication::handleReboot(JsonObject doc) {
-    const char* msgId = doc["msgId"] | "UNKNOWN";
+    const char* msgId = doc["msgId"] | doc["id"] | "UNKNOWN";
 
     StaticJsonDocument<128> response;
     response["msgId"] = msgId;
     response["status"] = "OK";
+    response["v"] = "2.0";
 
     char buffer[128];
     serializeJson(response, buffer);
